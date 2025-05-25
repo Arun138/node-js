@@ -1,6 +1,6 @@
 // 'multer' will upload the file into the server. Then, 'cloudinary' will upload it to 3rd party Cloudinary cloud storage from the server.
 
-import multer from "multer";
+import multer from "multer"; // Install
 
 const storage = multer.diskStorage({
   // storing the file in disk space

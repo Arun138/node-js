@@ -1,5 +1,5 @@
 // 'multer' will upload the file into the server. Then, 'cloudinary' will upload it to 3rd party Cloudinary cloud storage from the server.
-import { v2 as cloudinary } from "cloudinary";
+import { v2 as cloudinary } from "cloudinary"; // Install
 import fs from "fs"; // Used for managing file systems. Comes by default with node.
 
 // Configuration

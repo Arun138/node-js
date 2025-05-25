@@ -14,4 +14,18 @@ app.use(express.static("public")) // For static files like media files. We make 
 
 app.use(cookieParser()) // cookieParser configured for cookies
 
+
+
+// Routes import
+import userRouter from './routes/user.router.js'
+
+// Routes declaration
+app.use("/api/v1/users", userRouter) // http://localhost:8000/api/v1/users/register
+
+
+
+
+
+
+
 export { app };
