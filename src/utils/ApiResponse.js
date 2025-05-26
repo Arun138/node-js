@@ -8,3 +8,5 @@ class ApiResponse {
         this.success = statusCode < 400 // For Informational (100-199) , Successful (200 - 299) responses and Redirection messages (300 - 399) 
     }
 }
+
+export {ApiResponse}

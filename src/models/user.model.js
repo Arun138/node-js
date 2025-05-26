@@ -59,7 +59,7 @@ Middleware will access to 'next' flag, from other flags (err,req,res,next), in o
 */
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next(); // if passowrd is modified, then only run below code and encrypt it.
-  this.password = bcrypt.hash(this.password, 10); // here 10 is the salt to be used in encryption. If specified as a number then a salt will be generated with the specified number of rounds and used.
+  this.password = await bcrypt.hash(this.password, 10); // here 10 is the salt to be used in encryption. If specified as a number then a salt will be generated with the specified number of rounds and used.
   next();
 });
 
