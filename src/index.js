@@ -12,7 +12,7 @@
 import dotenv from "dotenv"; // Need to be configured
 import connectDB from "./db/index.js";
 import {app} from './app.js'
-dotenv.config({ path: "./env" }); // dotenv configured
+dotenv.config({ path: "./.env" }); // dotenv configured
 
 const port = process.env.PORT || 8000;
 

@@ -28,26 +28,31 @@ const registerUser = asyncHandler(async (req, res) => {
     // '.some' : Determines whether the specified callback function returns true for any element of an array. It runs a test on each element of the array. If at least one field meets the condition, .some() returns true.
 
     // '.trim' removes any leading or trailing spaces(spaces at the beginning and end, but the extra spaces between any letters or words remain untouched). If username = "  ", meaning it only contains spaces, it gets trimmed to "", triggering the error. - If password = null, field?.trim prevents an error, but since null?.trim evaluates to undefined, the check doesn’t work as intended. A better approach would be: field?.trim() === ""
-    throw new ApiError(400, "All fields are required");
+    throw new ApiError(400,"(Custom Error) | All fields are required");
   }
 
   // check if the user already exists: username, email
-  const existedUser = User.findOne({
+  const existedUser = await User.findOne({
     // '.findOne()' searches for a single document that matches the query.
 
     $or: [{ username }, { email }], // {$or: [{ username }, { email }]} is a MongoDB query operator that checks if a user exists with the given username OR email, the function returns that user.
   });
 
   if (existedUser) {
-    throw new ApiError(409, "User with email or username already exists.");
+    // console.log(existedUser);
+    throw new ApiError(409, "(Custom Error) | User with email or username already exists.");
   }
 
   // check for images, check for avatar
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  
+  let coverImageLocalPath;
+  if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+    coverImageLocalPath = req.files.coverImage[0].path
+  }
 
   if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar file is required");
+    throw new ApiError(400, "(Custom Error) | Avatar file is required");
   }
 
   // upload them to cloudinary, avatar
@@ -55,14 +60,14 @@ const registerUser = asyncHandler(async (req, res) => {
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
   if (!avatar) {
-    throw new ApiError(400, "Avatar file didn't get uploaded. ");
+    throw new ApiError(400, "(Custom Error) | Avatar file didn't get uploaded. ");
   }
 
   // create user object - create entry in db
   const user = await User.create({
     fullName,
     avatar: avatar.url, // storing only the url
-    coverImage: coverImage?.url || "", // coverImage is not necessary in registration. So checking here
+    coverImage: coverImage?.url || '', // coverImage is not necessary in registration. So checking here
     email,
     password,
     username: username.toLowerCase(),
@@ -75,7 +80,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // check for user creation
   if (!createdUser) {
-    throw new ApiError(400, "Something went wrong during user registration.");
+    throw new ApiError(400,"(Custom Error) | Something went wrong during user registration.");
   }
 
   // return response
