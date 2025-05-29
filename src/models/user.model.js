@@ -76,7 +76,7 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 userSchema.methods.generateAccessToken = function () {
     jwt.sign( // '.sign' method generates the token
         {
-            _id:this._id, // '_id' is already saved in the db and it does have everyone's access. thats why we need to generate one.
+            _id:this._id, // '_id' is already saved in the db and it does have everyone's access. thats why we need to generate one. We can access these fields from a decoded access token, like 'decodedToken._id'
             email:this.email,
             username:this.username,
             fullName:this.fullName

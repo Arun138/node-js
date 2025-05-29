@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { registerUser } from "../controllers/user.controller.js";
+import { logoutUser, registerUser } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -20,5 +21,9 @@ router.route("/register").post(
 
   registerUser
 );
+
+// secured routes
+router.route('/logout').post(verifyJWT,logoutUser) // here 'verifyJWT' is a middleware. We can use multiple of middlewares in a single route. like '...(verifyJWT,MidWare2,MidWare3,MidWare4,...,logoutUser)'. Just we have to use 'next()' in every middlewares in order to send the request to next middleware or function. So these will execute sequentially.
+
 
 export default router;
