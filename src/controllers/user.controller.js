@@ -339,10 +339,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     { new: true }
   ).select("-password");
 
-  
-  return res
-    .status(200)
-    .json(200, user, "Avatar updated successfully");
+  return res.status(200).json(200, user, "Avatar updated successfully");
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
@@ -370,10 +367,85 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     { new: true }
   ).select("-password");
 
-  return res
-    .status(200)
-    .json(200, user, "Cover image updated successfully");
+  return res.status(200).json(200, user, "Cover image updated successfully");
+});
 
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  const { username } = req.params; // getting the channel name from the URL
+  if (!username?.trim()) {
+    throw new ApiError(400, "username is missing");
+  }
+
+  // Agreegate pipelines
+  const channel = await User([
+    {
+      // 1st filter
+      $match: {
+        username: username?.toLowerCase(),
+      },
+    },
+    {
+      // 2nd filter within above filter(s)
+      $lookup: {
+        from: "subscriptions", // model where we need to search further. 'Subscription' model's name in mongodb is 'subscriptions'
+        localField: "_id", // field of User model, which is a foreign field in 'subscriptions'
+        foreignField: "channel", // field of 'subscriptions' model. We will get all the subscribers of this user.
+        as: "subscribers",
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions", // model where we need to search further. 'Subscription' model's name in mongodb is 'subscriptions'
+        localField: "_id", // field of User model, which is a foreign field in 'subscriptions'
+        foreignField: "subscriber", // field of 'subscriptions' model. We will get the user's subscribed list
+        as: "subscribedTo",
+      },
+    },
+    {
+      $addFields: {
+        // these are added fields to the User model
+        subscribersCount: {
+          // it will count the no. of documents in the mentioned fields
+          $size: "$subscribers", // we evaluated 'subscribers' above
+        },
+        channelsSubscribedToCount: {
+          $size: "$subscribedTo", // we evaluated 'subscribedTo' above
+        },
+        isSubscribed: {
+          // will tell if logged in user have subscribed to the shown channel
+          $cond: {
+            // condition
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] }, // checking if 'req.user?._id' is in '$subscribers.subscriber' list
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        // will send/project fields in the response that we have chosen
+        fullName: 1, // 1 means 'send'
+        username: 1,
+        subscribersCount: 1,
+        channelsSubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
+      },
+    },
+  ]);
+
+  if (!channel?.length) {
+    throw new ApiError(400, "Channel does not exist");
+  }
+
+  return res.
+  status(200)
+  .json(
+    new ApiResponse(200,channel[0],'User channel fetched successfully.')
+  )
 });
 
 export {
@@ -385,5 +457,5 @@ export {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
-  updateUserCoverImage
+  updateUserCoverImage,
 };
