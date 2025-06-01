@@ -4,6 +4,8 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import { mongo } from "mongoose";
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -441,12 +443,73 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Channel does not exist");
   }
 
-  return res.
-  status(200)
-  .json(
-    new ApiResponse(200,channel[0],'User channel fetched successfully.')
-  )
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, channel[0], "User channel fetched successfully.")
+    );
 });
+
+const getWatchHistory = asyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        // _id: req.user?._id // we can't use '_id' directly in agreegation bcz its a string and agreegations can't take string, its not mongodb id. We need to convert. But when we use mongoose to findById, it automatically converts it into mongodb id in BTS.
+        _id: new mongoose.Types.ObjectId(req.user?._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          // filter within filter
+          {
+            // now we are in Video model
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    // just showing required fields
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $addFields: {
+              owner: {
+                // it will overwrite the existing field 'owner', the one we evaluated avove
+                $first: "$owner", // choosing the 1st element of the array/field 'owner'
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      user[0].watchHistory,
+      'Watch history fetched successfully'
+    )
+  )
+
+
+});
+
+
 
 export {
   registerUser,
@@ -458,4 +521,6 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getUserChannelProfile,
+  getWatchHistory,
 };
