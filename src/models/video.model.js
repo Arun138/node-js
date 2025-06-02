@@ -1,5 +1,5 @@
 import mongoose, {Schema} from 'mongoose' 
-import mongooseAggregatePaginate from 'mongoose-aggregate-paginate-v2' // Install. Allows to write aggregation queries 
+import mongooseAggregatePaginate from 'mongoose-aggregate-paginate-v2' // Install. Allows to write aggregation queries . helps in pagination too.
 
 const videoSchema = new Schema({
     videoFile: {

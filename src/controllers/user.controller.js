@@ -4,7 +4,6 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
-import { mongo } from "mongoose";
 import mongoose from "mongoose";
 
 const generateAccessAndRefreshToken = async (userId) => {
@@ -200,8 +199,12 @@ const logoutUser = asyncHandler(async (req, res) => {
     req.user._id, // find the object
     {
       // mention what to update
-      $set: {
+      /* $set: {
         refreshToken: undefined,
+        }, */
+      // better way to do it:
+      $unset: {
+        refreshToken: 1, // this removes the field from document
       },
     },
     { new: true } // By default, findOneAndUpdate() returns the object as before it was updated. If you set "new: true", findOneAndUpdate() will instead give you the object after it was updated.
@@ -498,18 +501,16 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     },
   ]);
 
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      user[0].watchHistory,
-      'Watch history fetched successfully'
-    )
-  )
-
-
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "Watch history fetched successfully"
+      )
+    );
 });
-
-
 
 export {
   registerUser,
