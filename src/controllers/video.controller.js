@@ -9,6 +9,105 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
   //TODO: get all videos based on query, sort, pagination
+
+  // Checking if the query is valid or not.
+  const trimmedQuery = query?.trim(); // removing trainling spaces
+  if (!trimmedQuery) {
+    throw new ApiError(400, "(Custom Error) | Please enter keywords to search");
+  }
+  // if valid, making them suitable for searching in models
+  const regexPattern = trimmedQuery.replace(/\s+/g, "|"); // replacing spaces between words with '|', which is the 'OR' operator in regular expressions.
+
+  // Checking if the userId is valid or not
+  let userData;
+  if (isValidObjectId(userId)) {
+    userData = await User([
+      {
+        // 1st filter
+        $match: {
+          username: username?.toLowerCase(),
+        },
+      },
+      {
+        // 2nd filter within above filter(s)
+        $lookup: {
+          from: "subscriptions", // model where we need to search further. 'Subscription' model's name in mongodb is 'subscriptions'
+          localField: "_id", // field of User model, which is a foreign field in 'subscriptions'
+          foreignField: "channel", // field of 'subscriptions' model. We will get all the subscribers of this user.
+          as: "subscribers",
+        },
+      },
+      {
+        $lookup: {
+          from: "subscriptions", // model where we need to search further. 'Subscription' model's name in mongodb is 'subscriptions'
+          localField: "_id", // field of User model, which is a foreign field in 'subscriptions'
+          foreignField: "subscriber", // field of 'subscriptions' model. We will get the user's subscribed list
+          as: "subscribedTo",
+        },
+      },
+      {
+        $addFields: {
+          // these are added fields to the User model
+          subscribersCount: {
+            // it will count the no. of documents in the mentioned fields
+            $size: "$subscribers", // we evaluated 'subscribers' above
+          },
+          channelsSubscribedToCount: {
+            $size: "$subscribedTo", // we evaluated 'subscribedTo' above
+          },
+          isSubscribed: {
+            // will tell if logged in user have subscribed to the shown channel
+            $cond: {
+              // condition
+              if: { $in: [req.user?._id, "$subscribers.subscriber"] }, // checking if 'req.user?._id' is in '$subscribers.subscriber' list
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          // will send/project fields in the response that we have chosen
+          fullName: 1, // 1 means 'send'
+          username: 1,
+          subscribersCount: 1,
+          channelsSubscribedToCount: 1,
+          isSubscribed: 1,
+          avatar: 1,
+          coverImage: 1,
+          email: 1,
+        },
+      },
+    ]);
+  }
+
+  // Setting sorting parameters
+  let sortFilter = {};
+
+  if (sortBy && Array.isArray(sortBy) && sortBy.length > 0) {
+    sortBy.forEach((field) => {
+      sortFilter[field] = sortType;
+    });
+  }
+
+  // All videos based on query and sorting
+  const allVideos = await Video.find({
+    $or: [
+      { title: { $regex: regexPattern, $options: "i" } }, // - $options: "i" ensures case-insensitive searching.
+      { description: { $regex: regexPattern, $options: "i" } },
+    ],
+  }).sort(sortFilter);
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { userData, allVideos },
+        "Searched items are fetched successfully"
+      )
+    );
 });
 
 const publishAVideo = asyncHandler(async (req, res) => {
@@ -76,7 +175,7 @@ const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: get video by id
 
-  if (videoId === "") {
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(400, "(Custom Error) | Please give a valid video id. ");
   }
 
@@ -95,7 +194,7 @@ const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: update video details like title, description, thumbnail
 
-  if (videoId === "") {
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(400, "(Custom Error) | Please give a valid video id. ");
   }
 
@@ -144,7 +243,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: delete video
 
-  if (videoId === "") {
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(400, "(Custom Error) | Please give a valid video id. ");
   }
 
@@ -162,7 +261,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
-  if (videoId === "") {
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(400, "(Custom Error) | Please give a valid video id. ");
   }
 
