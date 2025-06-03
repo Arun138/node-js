@@ -21,65 +21,21 @@ const getAllVideos = asyncHandler(async (req, res) => {
   // Checking if the userId is valid or not
   let userData;
   if (isValidObjectId(userId)) {
-    userData = await User([
+    userData = await User.aggregate([
       {
-        // 1st filter
         $match: {
-          username: username?.toLowerCase(),
-        },
+          _id:userId
+        }
       },
       {
-        // 2nd filter within above filter(s)
-        $lookup: {
-          from: "subscriptions", // model where we need to search further. 'Subscription' model's name in mongodb is 'subscriptions'
-          localField: "_id", // field of User model, which is a foreign field in 'subscriptions'
-          foreignField: "channel", // field of 'subscriptions' model. We will get all the subscribers of this user.
-          as: "subscribers",
-        },
-      },
-      {
-        $lookup: {
-          from: "subscriptions", // model where we need to search further. 'Subscription' model's name in mongodb is 'subscriptions'
-          localField: "_id", // field of User model, which is a foreign field in 'subscriptions'
-          foreignField: "subscriber", // field of 'subscriptions' model. We will get the user's subscribed list
-          as: "subscribedTo",
-        },
-      },
-      {
-        $addFields: {
-          // these are added fields to the User model
-          subscribersCount: {
-            // it will count the no. of documents in the mentioned fields
-            $size: "$subscribers", // we evaluated 'subscribers' above
-          },
-          channelsSubscribedToCount: {
-            $size: "$subscribedTo", // we evaluated 'subscribedTo' above
-          },
-          isSubscribed: {
-            // will tell if logged in user have subscribed to the shown channel
-            $cond: {
-              // condition
-              if: { $in: [req.user?._id, "$subscribers.subscriber"] }, // checking if 'req.user?._id' is in '$subscribers.subscriber' list
-              then: true,
-              else: false,
-            },
-          },
-        },
-      },
-      {
-        $project: {
-          // will send/project fields in the response that we have chosen
-          fullName: 1, // 1 means 'send'
-          username: 1,
-          subscribersCount: 1,
-          channelsSubscribedToCount: 1,
-          isSubscribed: 1,
-          avatar: 1,
-          coverImage: 1,
-          email: 1,
-        },
-      },
-    ]);
+        $lookup:{
+          from: 'videos',
+          localField:'_id',
+          foreignField:'owner',
+          as: 'videos',
+        }
+      }
+    ])
   }
 
   // Setting sorting parameters
