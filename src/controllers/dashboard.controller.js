@@ -10,7 +10,9 @@ const getChannelStats = asyncHandler(async (req, res) => {
   // TODO: Get the channel stats like total video views, total subscribers, total videos, total likes etc.
 
   const channelInfo = await User.aggregate([
-    { $match: { _id: req.user?._id } },
+    { $match: { 
+        _id: new mongoose.Types.ObjectId(req.user?._id),
+     } },
 
     // Total subscribers
     {
@@ -76,6 +78,12 @@ const getChannelStats = asyncHandler(async (req, res) => {
       },
     },
   ]);
+
+  if (!channelInfo) {
+    throw new ApiError("No stats found");
+  }
+
+  return res.status(200).json(new ApiResponse(200,channelInfo,"Channel stats fetched successfully"))
 });
 
 const getChannelVideos = asyncHandler(async (req, res) => {
@@ -95,7 +103,7 @@ const getChannelVideos = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        { allVideos },
+        allVideos ,
         "All videos of the channel are fetched successfully"
       )
     );

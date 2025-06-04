@@ -24,18 +24,18 @@ const getAllVideos = asyncHandler(async (req, res) => {
     userData = await User.aggregate([
       {
         $match: {
-          _id:userId
-        }
+          _id: new mongoose.Types.ObjectId(userId),
+        },
       },
       {
-        $lookup:{
-          from: 'videos',
-          localField:'_id',
-          foreignField:'owner',
-          as: 'videos',
-        }
-      }
-    ])
+        $lookup: {
+          from: "videos",
+          localField: "_id",
+          foreignField: "owner",
+          as: "videos",
+        },
+      },
+    ]);
   }
 
   // Setting sorting parameters
@@ -212,7 +212,9 @@ const deleteVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "(Custom Error) | Video couldn't be deleted. ");
   }
 
-  return res.status(200).json(new ApiResponse(200, {}, "Video deleted successfully."));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Video deleted successfully."));
 });
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
