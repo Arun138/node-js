@@ -55,7 +55,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     ],
   }).sort(sortFilter);
 
-  res
+  return res
     .status(200)
     .json(
       new ApiResponse(
@@ -141,7 +141,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     throw new ApiError(400, "(Custom Error) | Video couldn't be found. ");
   }
 
-  res
+  return res
     .status(200)
     .json(new ApiResponse(200, video, "Video fetched successfully."));
 });
@@ -190,7 +190,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     );
   }
 
-  res
+  return res
     .status(200)
     .json(new ApiResponse(200, video, "Video updated successfully."));
 });
@@ -212,7 +212,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "(Custom Error) | Video couldn't be deleted. ");
   }
 
-  res.status(200).json(new ApiResponse(200, {}, "Video deleted successfully."));
+  return res.status(200).json(new ApiResponse(200, {}, "Video deleted successfully."));
 });
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
@@ -238,7 +238,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     throw new ApiError(400, "(Custom Error) | Video couldn't be toggled. ");
   }
 
-  res
+  return res
     .status(200)
     .json(new ApiResponse(200, video, "Video toggled successfully."));
 });
