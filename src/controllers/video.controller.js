@@ -5,6 +5,9 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { Playlist } from "../models/playlist.model.js";
+import { Like } from "../models/like.model.js";
+import { Comment } from "../models/comment.model.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
@@ -211,18 +214,28 @@ const deleteVideo = asyncHandler(async (req, res) => {
     throw new ApiError("Video does not exists");
   }
 
-  const video = await Video.findOneAndDelete({
-    _id: videoId,
-    owner: req.user?._id,
-  });
+  try {
+    await Video.findOneAndDelete({
+      _id: videoId,
+      owner: req.user?._id,
+    });
 
-  if (!video) {
-    throw new ApiError(400, "(Custom Error) | Video couldn't be deleted. ");
+    //  Remove the video from ALL playlists across ALL users that contain this video
+    await Playlist.updateMany(
+      { videos: videoId }, // Find ANY playlist containing this video
+      { $pull: { videos: videoId } } // Remove video from those playlists
+    );
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Video deleted successfully."));
+  } catch (error) {
+    throw new ApiError(
+      400,
+      "(Custom Error) | Something went wrong during deleting video.",
+      error
+    );
   }
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, {}, "Video deleted successfully."));
 });
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
@@ -234,7 +247,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
   if (Video.exists({ _id: videoId })) {
     throw new ApiError("Video does not exists");
   }
-  
+
   const video = await Video.findOneAndUpdate(
     {
       _id: videoId,
