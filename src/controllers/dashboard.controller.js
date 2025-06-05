@@ -88,11 +88,8 @@ const getChannelStats = asyncHandler(async (req, res) => {
 
 const getChannelVideos = asyncHandler(async (req, res) => {
   // TODO: Get all the videos uploaded by the channel
-  const { channelName } = req.params;
-  if (!channelName?.trim()) {
-    throw new ApiError(400, "Channel name is missing");
-  }
-  const allVideos = await Video.find({ owner: channelName });
+  
+  const allVideos = await Video.find({ owner: req.user?.username });
 
   if (!allVideos) {
     throw new ApiError(400, "No video found");

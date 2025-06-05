@@ -30,7 +30,8 @@ const createTweet = asyncHandler(async (req, res) => {
 
 const getUserTweets = asyncHandler(async (req, res) => {
   // TODO: get user tweets
-  const tweets = await Tweet.find((owner = req.user_id)).sort({
+  const userId = req.params
+  const tweets = await Tweet.find((owner = userId)).sort({
     createdAt: -1,
   });
 
@@ -45,7 +46,8 @@ const getUserTweets = asyncHandler(async (req, res) => {
 
 const updateTweet = asyncHandler(async (req, res) => {
   //TODO: update tweet
-  const { tweetId, content } = req.params;
+  const { tweetId } = req.params;
+  const { content } = req.body;
 
   if (!isValidObjectId(tweetId)) {
     throw new ApiError("Tweet id is invalid.");
