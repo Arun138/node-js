@@ -9,8 +9,12 @@ const toggleSubscription = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
   // TODO: toggle subscription
 
-  if (!isValidObjectId(channelId)) {
+  if (isValidObjectId(channelId)) {
     throw new ApiError("Channel Id is invalid");
+  }
+
+  if (User.exists({ _id: channelId })) {
+    throw new ApiError("Channel does not exists");
   }
 
   // check if current user have given channelId in its 'channel' field
@@ -42,8 +46,12 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
   const { subscriberId } = req.params;
 
-  if (!isValidObjectId(subscriberId)) {
+  if (isValidObjectId(subscriberId)) {
     throw new ApiError("Channel Id is invalid");
+  }
+  
+  if (User.exists({ _id: subscriberId })) {
+    throw new ApiError("Channel does not exists");
   }
 
   const allSubscribers = await User.aggregate([
@@ -77,9 +85,14 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 const getSubscribedChannels = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
 
-  if (!isValidObjectId(channelId)) {
+  if (isValidObjectId(channelId)) {
     throw new ApiError("Subscriber Id is invalid");
   }
+  
+  if (User.exists({ _id: channelId })) {
+    throw new ApiError("Channel does not exists");
+  }
+
 
   const allSubscribedChannels = await User.aggregate([
     {

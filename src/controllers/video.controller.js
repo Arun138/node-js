@@ -131,7 +131,7 @@ const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: get video by id
 
-  if (!isValidObjectId(videoId)) {
+  if (isValidObjectId(videoId)) {
     throw new ApiError(400, "(Custom Error) | Please give a valid video id. ");
   }
 
@@ -150,8 +150,12 @@ const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: update video details like title, description, thumbnail
 
-  if (!isValidObjectId(videoId)) {
+  if (isValidObjectId(videoId)) {
     throw new ApiError(400, "(Custom Error) | Please give a valid video id. ");
+  }
+
+  if (Video.exists({ _id: videoId })) {
+    throw new ApiError("Video does not exists");
   }
 
   let video;
@@ -199,8 +203,12 @@ const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: delete video
 
-  if (!isValidObjectId(videoId)) {
+  if (isValidObjectId(videoId)) {
     throw new ApiError(400, "(Custom Error) | Please give a valid video id. ");
+  }
+
+  if (Video.exists({ _id: videoId })) {
+    throw new ApiError("Video does not exists");
   }
 
   const video = await Video.findOneAndDelete({
@@ -219,10 +227,14 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
-  if (!isValidObjectId(videoId)) {
+  if (isValidObjectId(videoId)) {
     throw new ApiError(400, "(Custom Error) | Please give a valid video id. ");
   }
 
+  if (Video.exists({ _id: videoId })) {
+    throw new ApiError("Video does not exists");
+  }
+  
   const video = await Video.findOneAndUpdate(
     {
       _id: videoId,

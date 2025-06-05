@@ -49,8 +49,12 @@ const updateTweet = asyncHandler(async (req, res) => {
   const { tweetId } = req.params;
   const { content } = req.body;
 
-  if (!isValidObjectId(tweetId)) {
+  if (isValidObjectId(tweetId)) {
     throw new ApiError("Tweet id is invalid.");
+  }
+
+  if (Tweet.exists({ _id: tweetId })) {
+    throw new ApiError("Tweet does not exists");
   }
 
   const tweet = await Tweet.findByIdAndUpdate(
@@ -76,8 +80,12 @@ const deleteTweet = asyncHandler(async (req, res) => {
   //TODO: delete tweet
   const { tweetId } = req.params;
 
-  if (!isValidObjectId(tweetId)) {
+  if (isValidObjectId(tweetId)) {
     throw new ApiError("Tweet id is invalid.");
+  }
+  
+  if (Tweet.exists({ _id: tweetId })) {
+    throw new ApiError("Tweet does not exists");
   }
 
   const tweet = await Tweet.findByIdAndDelete(tweetId);
