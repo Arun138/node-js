@@ -6,8 +6,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { Playlist } from "../models/playlist.model.js";
-import { Like } from "../models/like.model.js";
-import { Comment } from "../models/comment.model.js";
+import {Like} from '../models/like.model.js'
+import {Comment} from '../models/comment.model.js'
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
@@ -158,7 +158,9 @@ const updateVideo = asyncHandler(async (req, res) => {
   }
 
   if (Video.exists({ _id: videoId })) {
-    throw new ApiError("Video does not exists");
+    throw new ApiError(
+      400,
+      "Video does not exists");
   }
 
   let video;
@@ -211,7 +213,9 @@ const deleteVideo = asyncHandler(async (req, res) => {
   }
 
   if (Video.exists({ _id: videoId })) {
-    throw new ApiError("Video does not exists");
+    throw new ApiError(
+      400,
+      "Video does not exists");
   }
 
   try {
@@ -225,16 +229,22 @@ const deleteVideo = asyncHandler(async (req, res) => {
       { videos: videoId }, // Find ANY playlist containing this video
       { $pull: { videos: videoId } } // Remove video from those playlists
     );
+    
+    // Remove all like objects related to this video
+    await Like.deleteMany(
+      { video: videoId }, 
+    );
+    
+    // Remove all comment objects related to this video
+    await Comment.deleteMany(
+      { video: videoId }, 
+    );
 
     return res
       .status(200)
       .json(new ApiResponse(200, {}, "Video deleted successfully."));
   } catch (error) {
-    throw new ApiError(
-      400,
-      "(Custom Error) | Something went wrong during deleting video.",
-      error
-    );
+    throw new ApiError(400, "(Custom Error) | Something went wrong during deleting video.",error);
   }
 });
 
@@ -245,7 +255,9 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
   }
 
   if (Video.exists({ _id: videoId })) {
-    throw new ApiError("Video does not exists");
+    throw new ApiError(
+      400,
+      "Video does not exists");
   }
 
   const video = await Video.findOneAndUpdate(

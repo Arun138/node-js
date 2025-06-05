@@ -11,7 +11,9 @@ const createTweet = asyncHandler(async (req, res) => {
   const {content} = req.body
 
   if (!content.trim()) {
-    throw new ApiError("Tweet can't be empty.");
+    throw new ApiError(
+      400,
+      "Tweet can't be empty.");
   }
 
   const tweet = await Tweet.create({
@@ -20,7 +22,9 @@ const createTweet = asyncHandler(async (req, res) => {
   });
 
   if (!tweet) {
-    throw new ApiError("Tweet couldn't be created.");
+    throw new ApiError(
+      400,
+      "Tweet couldn't be created.");
   }
 
   return res
@@ -36,7 +40,9 @@ const getUserTweets = asyncHandler(async (req, res) => {
   });
 
   if (!tweets) {
-    throw new ApiError("Tweets couldn't be found.");
+    throw new ApiError(
+      400,
+      "Tweets couldn't be found.");
   }
 
   return res
@@ -50,11 +56,15 @@ const updateTweet = asyncHandler(async (req, res) => {
   const { content } = req.body;
 
   if (isValidObjectId(tweetId)) {
-    throw new ApiError("Tweet id is invalid.");
+    throw new ApiError(
+      400,
+      "Tweet id is invalid.");
   }
 
   if (Tweet.exists({ _id: tweetId })) {
-    throw new ApiError("Tweet does not exists");
+    throw new ApiError(
+      400,
+      "Tweet does not exists");
   }
 
   const tweet = await Tweet.findByIdAndUpdate(
@@ -68,7 +78,9 @@ const updateTweet = asyncHandler(async (req, res) => {
   );
 
   if (!tweet) {
-    throw new ApiError("Something went wrong during updating the tweet.");
+    throw new ApiError(
+      400,
+      "Something went wrong during updating the tweet.");
   }
 
   return res
@@ -81,17 +93,23 @@ const deleteTweet = asyncHandler(async (req, res) => {
   const { tweetId } = req.params;
 
   if (isValidObjectId(tweetId)) {
-    throw new ApiError("Tweet id is invalid.");
+    throw new ApiError(
+      400,
+      "Tweet id is invalid.");
   }
   
   if (Tweet.exists({ _id: tweetId })) {
-    throw new ApiError("Tweet does not exists");
+    throw new ApiError(
+      400,
+      "Tweet does not exists");
   }
 
   const tweet = await Tweet.findByIdAndDelete(tweetId);
 
   if (!tweet) {
-    throw new ApiError("Something went wrong during deleting the tweet.");
+    throw new ApiError(
+      400,
+      "Something went wrong during deleting the tweet.");
   }
 
   return res

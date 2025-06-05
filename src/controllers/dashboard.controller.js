@@ -80,7 +80,9 @@ const getChannelStats = asyncHandler(async (req, res) => {
   ]);
 
   if (!channelInfo) {
-    throw new ApiError("No stats found");
+    throw new ApiError(
+      400,
+      "No stats found");
   }
 
   return res.status(200).json(new ApiResponse(200,channelInfo,"Channel stats fetched successfully"))

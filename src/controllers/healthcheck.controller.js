@@ -8,7 +8,9 @@ const healthcheck = asyncHandler(async (req, res) => {
     try {
         res.status(200).json(ApiResponse(200,{},'OK'))
     } catch (error) {
-        throw new ApiError("Health check: Not OK. ",error);
+        throw new ApiError(
+      400,
+      "Health check: Not OK. ",error);
     }
 })
 
