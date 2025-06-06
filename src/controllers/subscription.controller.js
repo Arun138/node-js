@@ -9,11 +9,11 @@ const toggleSubscription = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
   // TODO: toggle subscription
 
-  if (isValidObjectId(channelId)) {
+  if (!isValidObjectId(channelId)) {
     throw new ApiError(400, "Channel Id is invalid");
   }
 
-  if (User.exists({ _id: channelId })) {
+  if (!User.exists({ _id: channelId })) {
     throw new ApiError(400, "Channel does not exists");
   }
 
@@ -54,29 +54,54 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
   const { subscriberId } = req.params;
 
-  if (isValidObjectId(subscriberId)) {
+  if (!isValidObjectId(subscriberId)) {
     throw new ApiError(400, "Channel Id is invalid");
   }
 
-  if (User.exists({ _id: subscriberId })) {
+  if (!User.exists({ _id: subscriberId })) {
     throw new ApiError(400, "Channel does not exists");
   }
 
-  const allSubscribers = await User.aggregate([
+  const allSubscribers = await Subscription.aggregate([
     {
-      $match: {
-        _id: new mongoose.Types.ObjectId(subscriberId),
-      },
+      $match: { channel: new mongoose.Types.ObjectId(subscriberId) },
     },
     {
       $lookup: {
-        from: "subscriptions",
-        localField: "_id",
-        foreignField: "channel",
-        as: "subscribers",
+        from: "users",
+        localField: "subscriber",
+        foreignField: "_id",
+        as: "subscriberlInfo",
+        pipeline: [
+          {
+            $project: {
+              fullName: 1,
+              email: 1,
+              username: 1,
+              avatar: 1,
+              coverImage: 1,
+            },
+          },
+        ],
       },
     },
   ]);
+
+  // const allSubscribers = await User.aggregate([
+  //   {
+  //     $match: {
+  //       _id: new mongoose.Types.ObjectId(subscriberId),
+  //     },
+  //   },
+  //   {
+  //     $lookup: {
+  //       from: "subscriptions",
+  //       localField: "_id",
+  //       foreignField: "channel",
+  //       as: "subscribers",
+  //     },
+  //   },
+  // ]);
 
   return res
     .status(200)
@@ -93,26 +118,35 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 const getSubscribedChannels = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
 
-  if (isValidObjectId(channelId)) {
+  if (!isValidObjectId(channelId)) {
     throw new ApiError(400, "Subscriber Id is invalid");
   }
 
-  if (User.exists({ _id: channelId })) {
+  if (!User.exists({ _id: channelId })) {
     throw new ApiError(400, "Channel does not exists");
   }
 
-  const allSubscribedChannels = await User.aggregate([
+  const allSubscribedChannels = await Subscription.aggregate([
     {
-      $match: {
-        _id: new mongoose.Types.ObjectId(channelId),
-      },
+      $match: { subscriber: new mongoose.Types.ObjectId(channelId) },
     },
     {
       $lookup: {
-        from: "subscriptions",
-        localField: "_id",
-        foreignField: "subscriber",
-        as: "subscribedChannels",
+        from: "users",
+        localField: "channel",
+        foreignField: "_id",
+        as: "channelInfo",
+        pipeline: [
+          {
+            $project: {
+              fullName: 1,
+              email: 1,
+              username: 1,
+              avatar: 1,
+              coverImage: 1,
+            },
+          },
+        ],
       },
     },
   ]);
