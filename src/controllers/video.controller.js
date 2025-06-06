@@ -6,8 +6,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { Playlist } from "../models/playlist.model.js";
-import {Like} from '../models/like.model.js'
-import {Comment} from '../models/comment.model.js'
+import { Like } from "../models/like.model.js";
+import { Comment } from "../models/comment.model.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
@@ -36,6 +36,18 @@ const getAllVideos = asyncHandler(async (req, res) => {
           localField: "_id",
           foreignField: "owner",
           as: "videos",
+        },
+      },
+      {
+        $project: {
+          // will send/project fields in the response that we have chosen
+          _id: 1,
+          fullName: 1, // 1 means 'send'
+          username: 1,
+          avatar: 1,
+          coverImage: 1,
+          email: 1,
+          videos: 1,
         },
       },
     ]);
@@ -134,7 +146,7 @@ const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: get video by id
 
-  if (isValidObjectId(videoId)) {
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(400, "(Custom Error) | Please give a valid video id. ");
   }
 
@@ -153,22 +165,21 @@ const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: update video details like title, description, thumbnail
 
-  if (isValidObjectId(videoId)) {
+  const { title, description } = req.body;
+
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(400, "(Custom Error) | Please give a valid video id. ");
   }
 
-  if (Video.exists({ _id: videoId })) {
-    throw new ApiError(
-      400,
-      "Video does not exists");
+  if (!Video.exists({ _id: videoId })) {
+    throw new ApiError(400, "Video does not exists");
   }
 
-  let video;
   try {
-    const updateFields = {
-      title,
-      description,
-    };
+    const updateFields = {};
+    // Only add fields if they exist and are not empty
+    if (title?.trim()) updateFields.title = title.trim();
+    if (description?.trim()) updateFields.description = description.trim();
 
     if (
       req.files &&
@@ -183,7 +194,7 @@ const updateVideo = asyncHandler(async (req, res) => {
       }
     }
 
-    video = await Video.findOneAndUpdate(
+    const video = await Video.findOneAndUpdate(
       {
         _id: videoId,
         owner: req.user?._id,
@@ -191,6 +202,9 @@ const updateVideo = asyncHandler(async (req, res) => {
       { $set: updateFields }, // Updates only the specified fields
       { new: true }
     );
+    return res
+      .status(200)
+      .json(new ApiResponse(200, video, "Video updated successfully."));
   } catch (error) {
     throw new ApiError(
       400,
@@ -198,24 +212,18 @@ const updateVideo = asyncHandler(async (req, res) => {
       error
     );
   }
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, video, "Video updated successfully."));
 });
 
 const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: delete video
 
-  if (isValidObjectId(videoId)) {
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(400, "(Custom Error) | Please give a valid video id. ");
   }
 
-  if (Video.exists({ _id: videoId })) {
-    throw new ApiError(
-      400,
-      "Video does not exists");
+  if (!Video.exists({ _id: videoId })) {
+    throw new ApiError(400, "Video does not exists");
   }
 
   try {
@@ -229,35 +237,33 @@ const deleteVideo = asyncHandler(async (req, res) => {
       { videos: videoId }, // Find ANY playlist containing this video
       { $pull: { videos: videoId } } // Remove video from those playlists
     );
-    
+
     // Remove all like objects related to this video
-    await Like.deleteMany(
-      { video: videoId }, 
-    );
-    
+    await Like.deleteMany({ video: videoId });
+
     // Remove all comment objects related to this video
-    await Comment.deleteMany(
-      { video: videoId }, 
-    );
+    await Comment.deleteMany({ video: videoId });
 
     return res
       .status(200)
       .json(new ApiResponse(200, {}, "Video deleted successfully."));
   } catch (error) {
-    throw new ApiError(400, "(Custom Error) | Something went wrong during deleting video.",error);
+    throw new ApiError(
+      400,
+      "(Custom Error) | Something went wrong during deleting video.",
+      error
+    );
   }
 });
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
-  if (isValidObjectId(videoId)) {
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(400, "(Custom Error) | Please give a valid video id. ");
   }
 
-  if (Video.exists({ _id: videoId })) {
-    throw new ApiError(
-      400,
-      "Video does not exists");
+  if (!Video.exists({ _id: videoId })) {
+    throw new ApiError(400, "Video does not exists");
   }
 
   const video = await Video.findOneAndUpdate(
@@ -265,11 +271,13 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
       _id: videoId,
       owner: req.user?._id,
     },
-    {
-      $set: {
-        isPublished: { $not: "$isPublished" }, // This ensures true ⇄ false toggling
+    [ // [] this makes it an aggregation pipeline update. The $not operator is a query operator and cannot be used inside $set which is a update operator without []
+      {
+        $set: {
+          isPublished: { $not: "$isPublished" }, // This ensures true ⇄ false toggling
+        },
       },
-    },
+    ],
     { new: true }
   );
 
