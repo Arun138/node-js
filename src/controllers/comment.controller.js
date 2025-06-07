@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import { Comment } from "../models/comment.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -10,17 +10,17 @@ const getVideoComments = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const { page = 1, limit = 10 } = req.query;
 
-  if (isValidObjectId(videoId)) {
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(400, "Video Id is invalid");
   }
 
-  if (Video.exists({ _id: videoId })) {
+  if (!Video.exists({ _id: videoId })) {
     throw new ApiError(400, "Video does not exists");
   }
 
   const videoComments = await Comment.find({ video: videoId });
 
-  if (!videoComments) {
+  if (!(videoComments.length > 0)) {
     throw new ApiError(400, "No comments were found");
   }
 
@@ -41,11 +41,11 @@ const addComment = asyncHandler(async (req, res) => {
 
   const { comment } = req.body;
 
-  if (isValidObjectId(videoId)) {
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(400, "Video Id is invalid");
   }
 
-  if (Video.exists({ _id: videoId })) {
+  if (!Video.exists({ _id: videoId })) {
     throw new ApiError(400, "Video does not exist");
   }
 
@@ -69,11 +69,11 @@ const updateComment = asyncHandler(async (req, res) => {
 
   const { comment } = req.body;
 
-  if (isValidObjectId(commentId)) {
+  if (!isValidObjectId(commentId)) {
     throw new ApiError(400, "Comment Id is invalid");
   }
 
-  if (Comment.exists({ _id: commentId })) {
+  if (!Comment.exists({ _id: commentId })) {
     throw new ApiError(400, "Comment does not exist");
   }
 
@@ -100,13 +100,11 @@ const deleteComment = asyncHandler(async (req, res) => {
   const { commentId } = req.params;
   // TODO: delete a comment
 
-  if (isValidObjectId(commentId)) {
+  if (!isValidObjectId(commentId)) {
     throw new ApiError(400, "Comment Id is invalid");
   }
 
-  const deletedComment = await Comment.findByIdAndDelete(
-    commentId
-  );
+  const deletedComment = await Comment.findByIdAndDelete(commentId);
 
   if (!deletedComment) {
     throw new ApiError(400, "Comment couldn't be deleted");
