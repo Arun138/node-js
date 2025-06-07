@@ -5,6 +5,7 @@ import { Like } from "../models/like.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { User } from "../models/user.model.js";
 
 const getChannelStats = asyncHandler(async (req, res) => {
   // TODO: Get the channel stats like total video views, total subscribers, total videos, total likes etc.
@@ -71,6 +72,9 @@ const getChannelStats = asyncHandler(async (req, res) => {
     // Project only the needed fields
     {
       $project: {
+        fullName:1,
+        avatar:1,
+        coverImage:1,
         subscribersCount: 1,
         videosCount: 1,
         totalViews: 1,
@@ -91,7 +95,7 @@ const getChannelStats = asyncHandler(async (req, res) => {
 const getChannelVideos = asyncHandler(async (req, res) => {
   // TODO: Get all the videos uploaded by the channel
   
-  const allVideos = await Video.find({ owner: req.user?.username });
+  const allVideos = await Video.find({ owner: req.user?._id });
 
   if (!allVideos) {
     throw new ApiError(400, "No video found");
