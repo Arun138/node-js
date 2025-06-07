@@ -11,11 +11,11 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: toggle like on video
 
-  if (isValidObjectId(videoId)) {
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(400, "(Custom Error) | Please give a valid video id. ");
   }
 
-  if (Video.exists({ _id: videoId })) {
+  if (!Video.exists({ _id: videoId })) {
     throw new ApiError(400, "Video does not exists");
   }
 
@@ -25,21 +25,27 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
       video: videoId,
     });
 
+    let operation;
+
     if (isLiked) {
       await Like.deleteOne({
         likedBy: req.user?._id,
         video: videoId,
       });
+      operation = "Unliked the video";
     } else {
       await Like.create({
         likedBy: req.user?._id,
         video: videoId,
       });
+      operation = "Liked the video";
     }
 
     return res
       .status(200)
-      .json(new ApiResponse(200, {}, "Video-like toggled successfully."));
+      .json(
+        new ApiResponse(200, operation, "Video-like toggled successfully.")
+      );
   } catch (error) {
     throw new ApiError(
       400,
@@ -52,14 +58,14 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 const toggleCommentLike = asyncHandler(async (req, res) => {
   const { commentId } = req.params;
   //TODO: toggle like on comment
-  if (isValidObjectId(commentId)) {
+  if (!isValidObjectId(commentId)) {
     throw new ApiError(
       400,
       "(Custom Error) | Please give a valid comment id. "
     );
   }
 
-  if (Comment.exists({ _id: commentId })) {
+  if (!Comment.exists({ _id: commentId })) {
     throw new ApiError(400, "Comment does not exists");
   }
 
@@ -68,22 +74,26 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
       likedBy: req.user?._id,
       comment: commentId,
     });
-
+    let operation;
     if (isLiked) {
       await Like.deleteOne({
         likedBy: req.user?._id,
         comment: commentId,
       });
+      operation = "Unliked the comment";
     } else {
       await Like.create({
         likedBy: req.user?._id,
         comment: commentId,
       });
+      operation = "Liked the comment";
     }
 
     return res
       .status(200)
-      .json(new ApiResponse(200, {}, "Comment-like toggled successfully."));
+      .json(
+        new ApiResponse(200, operation, "Comment-like toggled successfully.")
+      );
   } catch (error) {
     throw new ApiError(
       400,
@@ -96,14 +106,14 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
 const toggleTweetLike = asyncHandler(async (req, res) => {
   const { tweetId } = req.params;
   //TODO: toggle like on tweet
-  if (isValidObjectId(tweetId)) {
+  if (!isValidObjectId(tweetId)) {
     throw new ApiError(
       400,
       "(Custom Error) | Please give a valid comment id. "
     );
   }
 
-  if (Tweet.exists({ _id: tweetId })) {
+  if (!Tweet.exists({ _id: tweetId })) {
     throw new ApiError(400, "Comment does not exists");
   }
 
@@ -112,22 +122,27 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
       likedBy: req.user?._id,
       tweet: tweetId,
     });
+    let operation;
 
     if (isLiked) {
       await Like.deleteOne({
         likedBy: req.user?._id,
         tweet: tweetId,
       });
+      operation = "Unliked the tweet";
     } else {
       await Like.create({
         likedBy: req.user?._id,
         tweet: tweetId,
       });
+      operation = "Liked the tweet";
     }
 
     return res
       .status(200)
-      .json(new ApiResponse(200, {}, "Tweet-like toggled successfully."));
+      .json(
+        new ApiResponse(200, operation, "Tweet-like toggled successfully.")
+      );
   } catch (error) {
     throw new ApiError(
       400,
@@ -143,6 +158,10 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     {
       $match: {
         likedBy: new mongoose.Types.ObjectId(req.user?._id),
+        video: {
+          $exists: true, // $exists: true - only includes documents that have a video field
+          $ne: null, // $ne: null - excludes documents where the video field is null
+        },
       },
     },
     {
@@ -153,9 +172,15 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         as: "likedVideos",
       },
     },
+    {
+      $unwind: "$likedVideos", // Flatten the likedVideos array
+    },
+    {
+      $replaceRoot: { newRoot: "$likedVideos" }, // Make video document the root
+    },
   ]);
 
-  if (!likedVideos) {
+  if (!(likedVideos.length>0)) {
     throw new ApiError(400, "You haven't liked any videos yet");
   }
 
